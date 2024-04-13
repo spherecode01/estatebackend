@@ -8,7 +8,6 @@ import testRoute from "./routes/test.route.js";
 import userRoute from "./routes/user.route.js";
 import chatRoute from "./routes/chat.route.js";
 import messageRoute from "./routes/message.route.js";
-import { Server } from "socket.io"; // Import Server from socket.io
 
 const app = express();
 
@@ -41,57 +40,6 @@ mongoose.connect(process.env.DATABASE_URL, {
   console.error("Database connection error:", error);
 });
 
-// Integrate Socket.IO with Express server
-const server = app.listen(8800, () => {
+app.listen(8800, () => {
   console.log("Server is running on port 8800");
-});
-
-// Initialize Socket.IO
-const io = new Server(server, {
-  cors: {
-    origin: "https://estatefrontend.onrender.com", // Specify the origin of the client
-  },
-});
-
-let onlineUsers = []; // Store online users
-
-const addUser = (userId, socketId) => {
-  const userExists = onlineUsers.find((user) => user.userId === userId);
-  if (!userExists) {
-    onlineUsers.push({ userId, socketId });
-  }
-};
-
-const removeUser = (socketId) => {
-  onlineUsers = onlineUsers.filter((user) => user.socketId !== socketId);
-};
-
-const getUser = (userId) => {
-  return onlineUsers.find((user) => user.userId === userId);
-};
-
-// Handle Socket.IO events
-io.on("connection", (socket) => {
-  console.log("A user connected:", socket.id);
-
-  // When a new user connects
-  socket.on("newUser", (userId) => {
-    addUser(userId, socket.id);
-  });
-
-  // When a user sends a message
-  socket.on("sendMessage", ({ receiverId, data }) => {
-    const receiver = getUser(receiverId);
-    if (receiver) {
-      io.to(receiver.socketId).emit("getMessage", data);
-    } else {
-      console.log("User not online");
-    }
-  });
-
-  // When a user disconnects
-  socket.on("disconnect", () => {
-    console.log("A user disconnected:", socket.id);
-    removeUser(socket.id);
-  });
 });
